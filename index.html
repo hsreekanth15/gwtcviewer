@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GWTC Data Viewer</title> 
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #006d77, #83c5be);
+      color: #333;
+    }
+
+    .top-header {
+      background: #023047;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    .body-section {
+      max-width: 900px;
+      
+      margin: 30px auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 14px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    select, button, input[type="file"] {
+      margin: 10px 5px;
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    select:focus, input[type="file"]:focus {
+      border-color: #219ebc;
+      box-shadow: 0 0 5px rgba(33,158,188,0.7);
+    }
+
+    button {
+      background: #219ebc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #023047;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background: #219ebc;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f6f9fc;
+    }
+
+    tr:nth-child(odd) {
+      background: #e0f7fa;
+    }
+
+    #output {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-header">GWTC Data Viewer</div>
+  <div class="body-section">  
+    <!-- File input -->
+    <input type="file" id="fileInput" accept=".csv"><br><br>
+
+    <!-- Dropdowns -->
+    <label for="eventSelect">Select Event:</label>
+    <select id="eventSelect"></select>
+
+    <label for="waveformSelect">Select Waveform:</label>
+    <select id="waveformSelect"></select>
+
+    <button onclick="showEvent()">Show Parameters</button>
+
+    <!-- Table -->
+    <div id="output"></div>
+  </div>
+
+  <script>
+    let data = [];
+
+    // Load CSV when user uploads
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      Papa.parse(file, {
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+          data = results.data;
+          populateEvents();
+        }
+      });
+    });
+
+    // Populate event dropdown
+    function populateEvents() {
+      const eventSelect = document.getElementById("eventSelect");
+      const events = [...new Set(data.map(d => d.Event))].filter(Boolean);
+
+      eventSelect.innerHTML = '<option value="">-- Select --</option>';
+      events.forEach(ev => {
+        let opt = document.createElement("option");
+        opt.value = ev;
+        opt.textContent = ev;
+        eventSelect.appendChild(opt);
+      });
+
+      eventSelect.addEventListener("change", populateWaveforms);
+    }
+
+    // Populate waveform dropdown based on event
+    function populateWaveforms() {
+      const event = document.getElementById("eventSelect").value;
+      const waveformSelect = document.getElementById("waveformSelect");
+
+      const waveforms = data
+        .filter(d => d.Event === event)
+        .map(d => d.Waveform);
+
+      waveformSelect.innerHTML = '<option value="">-- Select --</option>';
+      waveforms.forEach(wf => {
+        let opt = document.createElement("option");
+        opt.value = wf;
+        opt.textContent = wf;
+        waveformSelect.appendChild(opt);
+      });
+    }
+
+    // Show parameters for selected event + waveform
+    function showEvent() {
+      const event = document.getElementById("eventSelect").value;
+      const waveform = document.getElementById("waveformSelect").value;
+      const output = document.getElementById("output");
+
+      const record = data.find(d => d.Event === event && d.Waveform === waveform);
+
+      if (!record) {
+        output.innerHTML = "<p>No data found.</p>";
+        return;
+      }
+
+      // Build table
+      let html = "<table><tr><th>Parameter</th><th>Value</th></tr>";
+      for (let key in record) {
+        if (record.hasOwnProperty(key)) {
+          html += `<tr><td>${key}</td><td>${record[key]}</td></tr>`;
+        }
+      }
+      html += "</table>";
+
+      output.innerHTML = html;
+    }
+  </script>
+ 
+
+> 
+</body>
+</html>
